@@ -19,9 +19,49 @@ class User extends BaseUser
      */
     protected $id;
 
+    /** @ORM\OneToMany(targetEntity="AppBundle\Entity\UserTodoAssociation", mappedBy="user") */
+    protected $todos;
+
     public function __construct()
     {
         parent::__construct();
         // your own logic
+        $this->todos = new \Doctrine\Common\Collections\ArrayCollection();
+    }
+
+
+
+    /**
+     * Add todo
+     *
+     * @param \AppBundle\Entity\UserTodoAssociation $todo
+     *
+     * @return User
+     */
+    public function addTodo(\AppBundle\Entity\UserTodoAssociation $todo)
+    {
+        $this->todos[] = $todo;
+
+        return $this;
+    }
+
+    /**
+     * Remove todo
+     *
+     * @param \AppBundle\Entity\UserTodoAssociation $todo
+     */
+    public function removeTodo(\AppBundle\Entity\UserTodoAssociation $todo)
+    {
+        $this->todos->removeElement($todo);
+    }
+
+    /**
+     * Get todos
+     *
+     * @return \Doctrine\Common\Collections\Collection
+     */
+    public function getTodos()
+    {
+        return $this->todos;
     }
 }

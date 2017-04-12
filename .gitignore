@@ -20,3 +20,6 @@
 *.iws
 *.iml
 *.ipr
+
+*.php~
+*.bak
