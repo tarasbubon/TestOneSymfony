@@ -118,66 +118,82 @@ class UserTodoController extends Controller
             throw $this->createAccessDeniedException();
         }
 
-        $todo = $this->getDoctrine()
-            ->getRepository('AppBundle:UserTodo')
-            ->find($id);
-
-        $now = new\DateTime('now');
-
-        $todo->setName($todo->getName());
-        $todo->setCategory($todo->getCategory());
-        $todo->setDescription($todo->getDescription());
-        $todo->setPriority($todo->getPriority());
-        $todo->setDueDate($todo->getDueDate());
-        $todo->setCreateDate($now);
-
-        $form = $this->createFormBuilder($todo)
-            ->add('name', TextType::class, array('attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
-            ->add('category', TextType::class, array('attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
-            ->add('description', TextareaType::class, array('attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
-            ->add('priority', ChoiceType::class, array('choices' => array('Low' => 'Low', 'Normal' => 'Normal', 'High' => 'High'), 'attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
-            ->add('due_date', DateTimeType::class, array('attr' => array('class' => 'formcontrol', 'style' => 'margin-bottom: 15px')))
-            ->add('save', SubmitType::class, array('label' => 'Update Todo', 'attr' => array('class' => 'btn btn-primary', 'style' => 'margin-bottom: 15px')))
-            ->getForm();
-
-        $form->handleRequest($request);
-
-        if($form->isSubmitted() && $form->isValid())
+        if($this->getUser()->getId() == $this->getDoctrine()
+                ->getRepository('AppBundle:UserTodoAssociation')
+                ->findOneByTodo($this->getDoctrine()
+                    ->getRepository('AppBundle:UserTodo')
+                    ->find($id))->getUser()->getId())
         {
-            // Get Data
-            $name = $form['name']->getData();
-            $category = $form['category']->getData();
-            $description = $form['description']->getData();
-            $priority = $form['priority']->getData();
-            $due_date = $form['due_date']->getData();
+
+            $todo = $this->getDoctrine()
+                ->getRepository('AppBundle:UserTodo')
+                ->find($id);
 
             $now = new\DateTime('now');
 
-            $em = $this->getDoctrine()->getManager();
-            $todo = $em->getRepository('AppBundle:UserTodo')->find($id);
-
-            $todo->setName($name);
-            $todo->setCategory($category);
-            $todo->setDescription($description);
-            $todo->setPriority($priority);
-            $todo->setDueDate($due_date);
+            $todo->setName($todo->getName());
+            $todo->setCategory($todo->getCategory());
+            $todo->setDescription($todo->getDescription());
+            $todo->setPriority($todo->getPriority());
+            $todo->setDueDate($todo->getDueDate());
             $todo->setCreateDate($now);
 
-            $em->flush();
+            $form = $this->createFormBuilder($todo)
+                ->add('name', TextType::class, array('attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
+                ->add('category', TextType::class, array('attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
+                ->add('description', TextareaType::class, array('attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
+                ->add('priority', ChoiceType::class, array('choices' => array('Low' => 'Low', 'Normal' => 'Normal', 'High' => 'High'), 'attr' => array('class' => 'form-control', 'style' => 'margin-bottom: 15px')))
+                ->add('due_date', DateTimeType::class, array('attr' => array('class' => 'formcontrol', 'style' => 'margin-bottom: 15px')))
+                ->add('save', SubmitType::class, array('label' => 'Update Todo', 'attr' => array('class' => 'btn btn-primary', 'style' => 'margin-bottom: 15px')))
+                ->getForm();
 
+            $form->handleRequest($request);
+
+            if ($form->isSubmitted() && $form->isValid()) {
+                // Get Data
+                $name = $form['name']->getData();
+                $category = $form['category']->getData();
+                $description = $form['description']->getData();
+                $priority = $form['priority']->getData();
+                $due_date = $form['due_date']->getData();
+
+                $now = new\DateTime('now');
+
+                $em = $this->getDoctrine()->getManager();
+                $todo = $em->getRepository('AppBundle:UserTodo')->find($id);
+
+                $todo->setName($name);
+                $todo->setCategory($category);
+                $todo->setDescription($description);
+                $todo->setPriority($priority);
+                $todo->setDueDate($due_date);
+                $todo->setCreateDate($now);
+
+                $em->flush();
+
+                $this->addFlash(
+                    'notice',
+                    'Todo Updated'
+                );
+
+                return $this->redirectToRoute('todo_list');
+            }
+
+
+            return $this->render('todo/edit.html.twig', array(
+                'todo' => $todo,
+                'form' => $form->createView()
+            ));
+        }
+        else
+        {
             $this->addFlash(
-                'notice',
-                'Todo Updated'
+                'error',
+                'You Got No Permission'
             );
 
             return $this->redirectToRoute('todo_list');
         }
-
-
-        return $this->render('todo/edit.html.twig', array(
-            'todo' => $todo,
-            'form' => $form->createView()
-        ));
     }
 
     /**
@@ -189,13 +205,29 @@ class UserTodoController extends Controller
             throw $this->createAccessDeniedException();
         }
 
-        $todo = $this->getDoctrine()
-            ->getRepository('AppBundle:UserTodo')
-            ->find($id);
+        if($this->getUser()->getId() == $this->getDoctrine()
+                ->getRepository('AppBundle:UserTodoAssociation')
+                ->findOneByTodo($this->getDoctrine()
+                    ->getRepository('AppBundle:UserTodo')
+                    ->find($id))->getUser()->getId()) {
 
-        return $this->render('todo/details.html.twig', array(
-            'todo' => $todo
-        ));
+            $todo = $this->getDoctrine()
+                ->getRepository('AppBundle:UserTodo')
+                ->find($id);
+
+            return $this->render('todo/details.html.twig', array(
+                'todo' => $todo
+            ));
+        }
+        else
+        {
+            $this->addFlash(
+                'error',
+                'You Got No Permission'
+            );
+
+            return $this->redirectToRoute('todo_list');
+        }
     }
 
     /**
@@ -207,19 +239,34 @@ class UserTodoController extends Controller
             throw $this->createAccessDeniedException();
         }
 
-        $em = $this->getDoctrine()->getManager();
-        $todo = $em->getRepository('AppBundle:UserTodo')->find($id);
-        $usertodoassociation = $em->getRepository('AppBundle:UserTodoAssociation')->find($id);
+        if($this->getUser()->getId() == $this->getDoctrine()
+                ->getRepository('AppBundle:UserTodoAssociation')
+                ->findOneByTodo($this->getDoctrine()
+                    ->getRepository('AppBundle:UserTodo')
+                    ->find($id))->getUser()->getId()) {
+            $em = $this->getDoctrine()->getManager();
+            $todo = $em->getRepository('AppBundle:UserTodo')->find($id);
+            $usertodoassociation = $em->getRepository('AppBundle:UserTodoAssociation')->find($id);
 
-        $em->remove($todo);
-        $em->remove($usertodoassociation);
-        $em->flush();
+            $em->remove($todo);
+            $em->remove($usertodoassociation);
+            $em->flush();
 
-        $this->addFlash(
-            'notice',
-            'Todo Removed'
-        );
+            $this->addFlash(
+                'notice',
+                'Todo Removed'
+            );
 
-        return $this->redirectToRoute('todo_list');
+            return $this->redirectToRoute('todo_list');
+        }
+        else
+        {
+            $this->addFlash(
+                'error',
+                'You Got No Permission'
+            );
+
+            return $this->redirectToRoute('todo_list');
+        }
     }
 }
